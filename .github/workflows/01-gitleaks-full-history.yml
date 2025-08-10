@@ -1,5 +1,5 @@
 # .github/workflows/gitleaks-full-history.yml
-name: Gitleaks – Full History Scan
+name: Gitleaks - Scan directory for secrets
 
 on: [push]
 
@@ -25,10 +25,9 @@ jobs:
           sudo mv gitleaks /usr/local/bin/
           gitleaks version
 
-      - name: Run Gitleaks over entire repo history
+      - name: Run Gitleaks over nyt_decompiled directory
         run: |
-          gitleaks detect \
-            --source nyt_decompiled \
+          gitleaks dir nyt_decompiled \
             --report-format sarif \
             --report-path gitleaks.sarif \
             --redact \
