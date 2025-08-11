@@ -1,0 +1,282 @@
+package org.jasypt.contrib.org.apache.commons.codec_1_3.binary;
+
+import kotlin.jvm.internal.ByteCompanionObject;
+import org.jasypt.contrib.org.apache.commons.codec_1_3.BinaryDecoder;
+import org.jasypt.contrib.org.apache.commons.codec_1_3.BinaryEncoder;
+import org.jasypt.contrib.org.apache.commons.codec_1_3.DecoderException;
+import org.jasypt.contrib.org.apache.commons.codec_1_3.EncoderException;
+import org.jetbrains.anko.DimensionsKt;
+
+/* loaded from: classes.dex */
+public class Base64 implements BinaryEncoder, BinaryDecoder {
+    static final int BASELENGTH = 255;
+    static final int CHUNK_SIZE = 76;
+    static final int EIGHTBIT = 8;
+    static final int FOURBYTE = 4;
+    static final int LOOKUPLENGTH = 64;
+    static final byte PAD = 61;
+    static final int SIGN = -128;
+    static final int SIXTEENBIT = 16;
+    static final int TWENTYFOURBITGROUP = 24;
+    static final byte[] CHUNK_SEPARATOR = "\r\n".getBytes();
+    private static byte[] base64Alphabet = new byte[255];
+    private static byte[] lookUpBase64Alphabet = new byte[64];
+
+    static {
+        int j = 0;
+        for (int i = 0; i < 255; i++) {
+            base64Alphabet[i] = -1;
+        }
+        for (int i2 = 90; i2 >= 65; i2--) {
+            base64Alphabet[i2] = (byte) (i2 - 65);
+        }
+        for (int i3 = 122; i3 >= 97; i3--) {
+            base64Alphabet[i3] = (byte) ((i3 - 97) + 26);
+        }
+        for (int i4 = 57; i4 >= 48; i4--) {
+            base64Alphabet[i4] = (byte) ((i4 - 48) + 52);
+        }
+        base64Alphabet[43] = 62;
+        base64Alphabet[47] = 63;
+        for (int i5 = 0; i5 <= 25; i5++) {
+            lookUpBase64Alphabet[i5] = (byte) (65 + i5);
+        }
+        int i6 = 26;
+        int i7 = 0;
+        while (i6 <= 51) {
+            lookUpBase64Alphabet[i6] = (byte) (97 + i7);
+            i6++;
+            i7++;
+        }
+        int i8 = 52;
+        while (i8 <= 61) {
+            lookUpBase64Alphabet[i8] = (byte) (48 + j);
+            i8++;
+            j++;
+        }
+        lookUpBase64Alphabet[62] = 43;
+        lookUpBase64Alphabet[63] = 47;
+    }
+
+    private static boolean isBase64(byte octect) {
+        if (octect == 61 || base64Alphabet[octect] != -1) {
+            return true;
+        }
+        return false;
+    }
+
+    public static boolean isArrayByteBase64(byte[] arrayOctect) {
+        byte[] arrayOctect2 = discardWhitespace(arrayOctect);
+        int length = arrayOctect2.length;
+        if (length == 0) {
+            return true;
+        }
+        for (byte b : arrayOctect2) {
+            if (!isBase64(b)) {
+                return false;
+            }
+        }
+        return true;
+    }
+
+    public static byte[] encodeBase64(byte[] binaryData) {
+        return encodeBase64(binaryData, false);
+    }
+
+    public static byte[] encodeBase64Chunked(byte[] binaryData) {
+        return encodeBase64(binaryData, true);
+    }
+
+    @Override // org.jasypt.contrib.org.apache.commons.codec_1_3.Decoder
+    public Object decode(Object pObject) throws DecoderException {
+        if (!(pObject instanceof byte[])) {
+            throw new DecoderException("Parameter supplied to Base64 decode is not a byte[]");
+        }
+        return decode((byte[]) pObject);
+    }
+
+    @Override // org.jasypt.contrib.org.apache.commons.codec_1_3.BinaryDecoder
+    public byte[] decode(byte[] pArray) {
+        return decodeBase64(pArray);
+    }
+
+    public static byte[] encodeBase64(byte[] binaryData, boolean isChunked) {
+        int lengthDataBits;
+        int lengthDataBits2;
+        int numberTriplets;
+        int numberTriplets2;
+        int lengthDataBits3 = binaryData.length * 8;
+        int fewerThan24bits = lengthDataBits3 % 24;
+        int numberTriplets3 = lengthDataBits3 / 24;
+        int nbrChunks = 0;
+        int encodedDataLength = fewerThan24bits != 0 ? (numberTriplets3 + 1) * 4 : numberTriplets3 * 4;
+        if (isChunked) {
+            nbrChunks = CHUNK_SEPARATOR.length == 0 ? 0 : (int) Math.ceil(encodedDataLength / 76.0f);
+            encodedDataLength += CHUNK_SEPARATOR.length * nbrChunks;
+        }
+        byte[] encodedData = new byte[encodedDataLength];
+        int chunksSoFar = 76;
+        int chunksSoFar2 = 0;
+        int i = 0;
+        int encodedIndex = 0;
+        while (i < numberTriplets3) {
+            int dataIndex = i * 3;
+            byte b1 = binaryData[dataIndex];
+            byte b2 = binaryData[dataIndex + 1];
+            byte b3 = binaryData[dataIndex + 2];
+            byte l = (byte) (b2 & 15);
+            byte k = (byte) (b1 & 3);
+            byte val1 = (byte) ((b1 & ByteCompanionObject.MIN_VALUE) == 0 ? b1 >> 2 : (b1 >> 2) ^ 192);
+            if ((b2 & ByteCompanionObject.MIN_VALUE) == 0) {
+                lengthDataBits = lengthDataBits3;
+                lengthDataBits2 = b2 >> 4;
+            } else {
+                lengthDataBits = lengthDataBits3;
+                lengthDataBits2 = (b2 >> 4) ^ DimensionsKt.HDPI;
+            }
+            byte val2 = (byte) lengthDataBits2;
+            if ((b3 & ByteCompanionObject.MIN_VALUE) == 0) {
+                numberTriplets = numberTriplets3;
+                numberTriplets2 = b3 >> 6;
+            } else {
+                numberTriplets = numberTriplets3;
+                numberTriplets2 = (b3 >> 6) ^ 252;
+            }
+            byte val3 = (byte) numberTriplets2;
+            encodedData[encodedIndex] = lookUpBase64Alphabet[val1];
+            encodedData[encodedIndex + 1] = lookUpBase64Alphabet[val2 | (k << 4)];
+            encodedData[encodedIndex + 2] = lookUpBase64Alphabet[(l << 2) | val3];
+            encodedData[encodedIndex + 3] = lookUpBase64Alphabet[b3 & 63];
+            int encodedIndex2 = encodedIndex + 4;
+            if (isChunked && encodedIndex2 == chunksSoFar) {
+                System.arraycopy(CHUNK_SEPARATOR, 0, encodedData, encodedIndex2, CHUNK_SEPARATOR.length);
+                chunksSoFar2++;
+                chunksSoFar = (76 * (chunksSoFar2 + 1)) + (CHUNK_SEPARATOR.length * chunksSoFar2);
+                encodedIndex = encodedIndex2 + CHUNK_SEPARATOR.length;
+            } else {
+                int nextSeparatorIndex = chunksSoFar;
+                int nextSeparatorIndex2 = chunksSoFar2;
+                chunksSoFar2 = nextSeparatorIndex2;
+                encodedIndex = encodedIndex2;
+                chunksSoFar = nextSeparatorIndex;
+            }
+            i++;
+            lengthDataBits3 = lengthDataBits;
+            numberTriplets3 = numberTriplets;
+        }
+        int nextSeparatorIndex3 = chunksSoFar2;
+        int lengthDataBits4 = i * 3;
+        if (fewerThan24bits == 8) {
+            byte b12 = binaryData[lengthDataBits4];
+            byte k2 = (byte) (b12 & 3);
+            byte val12 = (byte) ((b12 & ByteCompanionObject.MIN_VALUE) == 0 ? b12 >> 2 : (b12 >> 2) ^ 192);
+            encodedData[encodedIndex] = lookUpBase64Alphabet[val12];
+            encodedData[encodedIndex + 1] = lookUpBase64Alphabet[k2 << 4];
+            encodedData[encodedIndex + 2] = PAD;
+            encodedData[encodedIndex + 3] = PAD;
+        } else if (fewerThan24bits == 16) {
+            byte b13 = binaryData[lengthDataBits4];
+            byte b22 = binaryData[lengthDataBits4 + 1];
+            byte l2 = (byte) (b22 & 15);
+            byte k3 = (byte) (b13 & 3);
+            byte val13 = (byte) ((b13 & ByteCompanionObject.MIN_VALUE) == 0 ? b13 >> 2 : (b13 >> 2) ^ 192);
+            byte val22 = (byte) ((b22 & ByteCompanionObject.MIN_VALUE) == 0 ? b22 >> 4 : (b22 >> 4) ^ DimensionsKt.HDPI);
+            encodedData[encodedIndex] = lookUpBase64Alphabet[val13];
+            encodedData[encodedIndex + 1] = lookUpBase64Alphabet[val22 | (k3 << 4)];
+            encodedData[encodedIndex + 2] = lookUpBase64Alphabet[l2 << 2];
+            encodedData[encodedIndex + 3] = PAD;
+        }
+        if (isChunked && nextSeparatorIndex3 < nbrChunks) {
+            System.arraycopy(CHUNK_SEPARATOR, 0, encodedData, encodedDataLength - CHUNK_SEPARATOR.length, CHUNK_SEPARATOR.length);
+        }
+        return encodedData;
+    }
+
+    public static byte[] decodeBase64(byte[] base64Data) {
+        byte[] base64Data2 = discardNonBase64(base64Data);
+        if (base64Data2.length == 0) {
+            return new byte[0];
+        }
+        int numberQuadruple = base64Data2.length / 4;
+        int encodedIndex = 0;
+        int lastData = base64Data2.length;
+        while (base64Data2[lastData - 1] == 61) {
+            lastData--;
+            if (lastData == 0) {
+                return new byte[0];
+            }
+        }
+        byte[] decodedData = new byte[lastData - numberQuadruple];
+        for (int i = 0; i < numberQuadruple; i++) {
+            int dataIndex = i * 4;
+            byte marker0 = base64Data2[dataIndex + 2];
+            byte marker1 = base64Data2[dataIndex + 3];
+            byte b1 = base64Alphabet[base64Data2[dataIndex]];
+            byte b2 = base64Alphabet[base64Data2[dataIndex + 1]];
+            if (marker0 != 61 && marker1 != 61) {
+                byte b3 = base64Alphabet[marker0];
+                byte b4 = base64Alphabet[marker1];
+                decodedData[encodedIndex] = (byte) ((b1 << 2) | (b2 >> 4));
+                decodedData[encodedIndex + 1] = (byte) (((b2 & 15) << 4) | ((b3 >> 2) & 15));
+                decodedData[encodedIndex + 2] = (byte) ((b3 << 6) | b4);
+            } else if (marker0 == 61) {
+                decodedData[encodedIndex] = (byte) ((b1 << 2) | (b2 >> 4));
+            } else if (marker1 == 61) {
+                byte b32 = base64Alphabet[marker0];
+                decodedData[encodedIndex] = (byte) ((b1 << 2) | (b2 >> 4));
+                decodedData[encodedIndex + 1] = (byte) (((b2 & 15) << 4) | ((b32 >> 2) & 15));
+            }
+            encodedIndex += 3;
+        }
+        return decodedData;
+    }
+
+    static byte[] discardWhitespace(byte[] data) {
+        byte[] groomedData = new byte[data.length];
+        int bytesCopied = 0;
+        for (int bytesCopied2 = 0; bytesCopied2 < data.length; bytesCopied2++) {
+            byte b = data[bytesCopied2];
+            if (b != 13 && b != 32) {
+                switch (b) {
+                    case 9:
+                    case 10:
+                        break;
+                    default:
+                        groomedData[bytesCopied] = data[bytesCopied2];
+                        bytesCopied++;
+                        break;
+                }
+            }
+        }
+        byte[] packedData = new byte[bytesCopied];
+        System.arraycopy(groomedData, 0, packedData, 0, bytesCopied);
+        return packedData;
+    }
+
+    static byte[] discardNonBase64(byte[] data) {
+        byte[] groomedData = new byte[data.length];
+        int bytesCopied = 0;
+        for (int bytesCopied2 = 0; bytesCopied2 < data.length; bytesCopied2++) {
+            if (isBase64(data[bytesCopied2])) {
+                groomedData[bytesCopied] = data[bytesCopied2];
+                bytesCopied++;
+            }
+        }
+        byte[] packedData = new byte[bytesCopied];
+        System.arraycopy(groomedData, 0, packedData, 0, bytesCopied);
+        return packedData;
+    }
+
+    @Override // org.jasypt.contrib.org.apache.commons.codec_1_3.Encoder
+    public Object encode(Object pObject) throws EncoderException {
+        if (!(pObject instanceof byte[])) {
+            throw new EncoderException("Parameter supplied to Base64 encode is not a byte[]");
+        }
+        return encode((byte[]) pObject);
+    }
+
+    @Override // org.jasypt.contrib.org.apache.commons.codec_1_3.BinaryEncoder
+    public byte[] encode(byte[] pArray) {
+        return encodeBase64(pArray, false);
+    }
+}
