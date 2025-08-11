@@ -1,0 +1,29 @@
+rules:
+  - id: android_root_detection
+    severity: INFO
+    languages:
+      - java
+    metadata:
+      owasp-mobile: m8
+      category: security
+      area: resilience
+      author: Sven Schleier, original rule by @ajinabraham <https://github.com/MobSF/mobsfscan/blob/main/mobsfscan/rules/semgrep/best_practices/root_detection.yaml>
+      verification-level:
+        - R
+      reference: >-
+        https://github.com/MobSF/owasp-mstg/blob/master/Document/0x05j-Testing-Resiliency-Against-Reverse-Engineering.md#testing-root-detection-mstg-resilience-1
+    message: >-
+      This app has root detection capabilities. Verify the effectiveness. Running a sensitive
+      application on a rooted device questions the device integrity and affects users data.
+    patterns:
+      - pattern-either:
+          - pattern: |
+              $R.isDeviceRooted(...)
+          - pattern: |              
+              $R.singleRootDetection(...)
+          - pattern: |
+              $R.isRooted(...)
+          - pattern: |
+              RootTools.isAccessGiven(...)
+          - pattern: |
+              $MTD.contains("test-keys")
