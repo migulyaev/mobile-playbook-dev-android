@@ -40,3 +40,12 @@ jobs:
       - uses: actions/checkout@v4
       # Run the "semgrep ci" command on the command line of the docker image.
       - run: semgrep -c semgrep-rules-android-security/rules Finstergram/sources/com/netlight/sec/finstergram --sarif-output=finstergram.sarif --sarif
+
+      - name: Upload SARIF file
+        uses: github/codeql-action/upload-sarif@v3
+        with:
+          # Path to SARIF file relative to the root of the repository
+          sarif_file: ./finstergram.sarif
+          # Optional category for the results
+          # Used to differentiate multiple results for one commit
+          category: semgrep-finstergram
