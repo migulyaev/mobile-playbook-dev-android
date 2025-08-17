@@ -12,6 +12,7 @@ on:
       - master
     paths:
       - .github/workflows/02-dependency-check.yml
+      - tasky/**/build.gradle*
 
 permissions:
   contents: read
