@@ -12,6 +12,7 @@ dependencyCheck {
     analyzers {
         assemblyEnabled = false  // disables .NET assembly analyzer
         nodeAuditEnabled = false // disables node analyzer
+        centralEnabled = false
     }
 
     nvd {
